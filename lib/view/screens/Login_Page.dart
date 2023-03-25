@@ -1,5 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:registration_login/view/Globals/Globals.dart';
+import 'package:registration_login/helpers/firebase_auth_helpers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'Singup_Page.dart';
@@ -13,9 +14,11 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   GlobalKey<FormState> formKey = GlobalKey<FormState>();
-
+  final signInFormKey = GlobalKey<FormState>();
   TextEditingController emailcontrollar = TextEditingController();
   TextEditingController passwordcontrollar = TextEditingController();
+  String? email;
+  String? pass;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +30,7 @@ class _LoginPageState extends State<LoginPage> {
               image: AssetImage(
                 "assets/images/unsplash.png",
               ),
-              height: double.infinity,
+              //height: double.infinity,
             ),
           ),
           Padding(
@@ -37,176 +40,233 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 const Text(
                   "Login",
-                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 25,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                Column(
-                  children: [
-                    TextFormField(
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      controller: emailcontrollar,
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        fillColor: Colors.white.withOpacity(0.9),
-                        filled: true,
-                        hintText: "Email",
-                        labelText: 'Email',
-                        labelStyle: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w400,
-                            fontSize: 18),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Colors.black,
+                Form(
+                  key: signInFormKey,
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        decoration: InputDecoration(
+                          fillColor: Colors.white.withOpacity(0.9),
+                          filled: true,
+                          hintText: "Enter email...",
+                          labelText: 'Email',
+                          labelStyle: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w400,
+                              fontSize: 18),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          focusedBorder: const OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black),
                           ),
                         ),
+                        controller: emailcontrollar,
+                        validator: (val) {
+                          if (val!.isEmpty) {
+                            return 'Enter email...';
+                          }
+                          return null;
+                        },
+                        onSaved: (val) {
+                          email = val;
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 30),
-                    TextFormField(
-                      controller: passwordcontrollar,
-                      decoration: InputDecoration(
-                        fillColor: Colors.white.withOpacity(0.9),
-                        filled: true,
-                        hintText: "Password",
-                        labelText: 'Password',
-                        labelStyle: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w400,
-                            fontSize: 18),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        decoration: InputDecoration(
+                          fillColor: Colors.white.withOpacity(0.9),
+                          filled: true,
+                          hintText: "Enter Password...",
+                          labelText: 'Password',
+                          labelStyle: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w400,
+                              fontSize: 18),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          focusedBorder: const OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black),
+                          ),
                         ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.black),
-                        ),
+                        controller: passwordcontrollar,
+                        validator: (val) {
+                          if (val!.isEmpty) {
+                            return 'Enter password...';
+                          }
+                          return null;
+                        },
+                        onSaved: (val) {
+                          pass = val;
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text(
-                          "Remember me",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        Text(
-                          "Format Password?",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    GestureDetector(
-                      onTap: () async {
-                        if (emailcontrollar.text == Globals.email &&
-                            passwordcontrollar.text == Globals.password) {
-                          SharedPreferences prefs =
-                              await SharedPreferences.getInstance();
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text(
+                            "Remember me",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          Text(
+                            "Format Password?",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      GestureDetector(
+                        onTap: () async {
+                          if (signInFormKey.currentState!.validate()) {
+                            signInFormKey.currentState!.save();
+                            Map<String, dynamic> res =
+                                await firebaseAuthhelper.FirebaseAuthhelper
+                                    .signIn(email: email!, password: pass!);
 
-                          await prefs.setBool('isLogin', true);
-                          Navigator.of(context).pushReplacementNamed('/');
-                        }
-                      },
-                      child: Container(
-                        alignment: Alignment.center,
-                        height: MediaQuery.of(context).size.height / 15,
-                        width: MediaQuery.of(context).size.width * 6,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.green[400],
-                        ),
-                        child: const Text(
-                          "Login",
-                          style: TextStyle(fontSize: 20, color: Colors.white),
+                            if (res['user'] != null) {
+                              //Navigator.of(context).pop();
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Sign In succcess..."),
+                                  backgroundColor: Colors.green,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              Navigator.of(context).pushReplacementNamed('/');
+                            } else if (res['error'] != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("${res['error']}"),
+                                ),
+                              );
+                            } else {
+                              // Navigator.of(context).pop();
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Sign In Failad..."),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        child: Container(
+                          alignment: Alignment.center,
+                          height: MediaQuery.of(context).size.height / 15,
+                          width: MediaQuery.of(context).size.width * 6,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.green[400],
+                          ),
+                          child: const Text(
+                            "Login",
+                            style: TextStyle(fontSize: 20, color: Colors.white),
+                          ),
                         ),
                       ),
-                    ),
-                    // ElevatedButton(
-                    //   onPressed: () async {
-                    //     if (usernamecontrollar.text == 'ArshitVadsak' &&
-                    //         passwordcontrollar.text == '123456789') {
-                    //       SharedPreferences prefs =
-                    //           await SharedPreferences.getInstance();
-                    //
-                    //       await prefs.setBool('isLogin', true);
-                    //
-                    //       Navigator.of(context).pushReplacementNamed('/');
-                    //     }
-                    //   },
-                    //  child: Text("Log in"),
-                   // ),
-                    const SizedBox(height: 30),
-                    Row(
-                      children: const [
-                        Text(
-                          "---------------------------",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        Spacer(),
-                        Text(
-                          "Or login with",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        Spacer(),
-                        Text(
-                          "---------------------------",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {},
-                          child: const Icon(
-                            Icons.apple,
-                            size: 30,
+                      const SizedBox(height: 30),
+                      Row(
+                        children: const [
+                          Text(
+                            "---------------------------",
+                            style: TextStyle(color: Colors.white),
                           ),
-                          style: ElevatedButton.styleFrom(
-                              primary: Colors.grey,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 25, vertical: 9),
-                              textStyle: const TextStyle(
-                                  fontSize: 30, fontWeight: FontWeight.bold)),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {},
-                          child: const Icon(
-                            Icons.facebook_outlined,
-                            size: 30,
+                          Spacer(),
+                          Text(
+                            "Or login with",
+                            style: TextStyle(color: Colors.white),
                           ),
-                          style: ElevatedButton.styleFrom(
-                              primary: Colors.grey,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 25, vertical: 9),
-                              textStyle: const TextStyle(
-                                  fontSize: 30, fontWeight: FontWeight.bold)),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SignupPage(),
-                              ),
-                            );
-                          },
-                          child: const Icon(Icons.g_mobiledata, size: 40),
-                          style: ElevatedButton.styleFrom(
-                              primary: Colors.grey,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 3),
-                              textStyle: const TextStyle(
-                                  fontSize: 30, fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                  ],
+                          Spacer(),
+                          Text(
+                            "---------------------------",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () async {
+                              User? user = await firebaseAuthhelper
+                                  .FirebaseAuthhelper.signInAnnonymously();
+                              if (user != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Login successful..."),
+                                    backgroundColor: Colors.green,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                Navigator.of(context).pushReplacementNamed('/');
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Faild"),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            },
+                            child: const Icon(
+                              Icons.group_sharp,
+                              size: 30,
+                              color: Colors.white,
+                            ),
+                            style: ElevatedButton.styleFrom(
+                                primary: Colors.grey,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 25, vertical: 9),
+                                textStyle: const TextStyle(
+                                    fontSize: 30, fontWeight: FontWeight.bold)),
+                          ),
+                          ElevatedButton(
+                            child: const Icon(
+                              Icons.g_mobiledata,
+                              size: 40,
+                              color: Colors.white,
+                            ),
+                            onPressed: () async {
+                              Map<String, dynamic> res =
+                                  await firebaseAuthhelper.FirebaseAuthhelper
+                                      .signInWithGoogle();
+                              if (res['user'] != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Login successful..."),
+                                    backgroundColor: Colors.green,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                Navigator.of(context).pushReplacementNamed('/');
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Faild"),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                                primary: Colors.grey,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 3),
+                                textStyle: const TextStyle(
+                                    fontSize: 30, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -215,9 +275,15 @@ class _LoginPageState extends State<LoginPage> {
                       "Don't have an account? ",
                       style: TextStyle(fontSize: 16, color: Colors.white),
                     ),
-                    Text(
-                      "Singup",
-                      style: TextStyle(color: Colors.green[400], fontSize: 16),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pushReplacementNamed(context, 'signup_page');
+                      },
+                      child: Text(
+                        "Singup",
+                        style:
+                            TextStyle(color: Colors.green[400], fontSize: 16),
+                      ),
                     ),
                   ],
                 ),
